@@ -1,0 +1,6 @@
+traitement_en_cours/
+traite/
+*.gz
+*.xml
+*.log
+*.db
