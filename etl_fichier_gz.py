@@ -15,6 +15,10 @@ DOSSIER_SORTIE = r"./traite/"
 BDD = 'bdd_actes_budgetaires_gz.db'
 NOM_CSV = 'donnees_budgetaires.csv'
 
+logging.basicConfig(level=logging.INFO,
+                    filename='traitement.log', 
+                    filemode='w')
+
 def timing_decorator(func):
  def wrapper(*args, **kwargs):
   start_time = time.time()
