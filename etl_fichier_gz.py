@@ -15,13 +15,6 @@ DOSSIER_SORTIE = r"./traite/"
 BDD = 'bdd_actes_budgetaires_gz.db'
 NOM_CSV = 'donnees_budgetaires.csv'
 
-def ouverture_gzip(chemin) : 
- with gzip.open(chemin, 'rb') as fichier_ouvert : 
-  fichier_xml_gzip = fichier_ouvert.read()
-  fichier_xml = fichier_xml_gzip.decode('latin-1')
-  fichier_dict = xmltodict.parse(fichier_xml)
- return fichier_dict
-
 def timing_decorator(func):
  def wrapper(*args, **kwargs):
   start_time = time.time()
@@ -32,30 +25,38 @@ def timing_decorator(func):
   return result
  return wrapper
 
-def v2_parse_budget(data_dict: dict) -> pd.DataFrame : 
+def ouverture_gzip(chemin) : 
+ with gzip.open(chemin, 'rb') as fichier_ouvert : 
+  fichier_xml_gzip = fichier_ouvert.read()
+  fichier_xml = fichier_xml_gzip.decode('latin-1')
+  fichier_dict = xmltodict.parse(fichier_xml)
+ return fichier_dict
+
+
+def parse_budget(data_dict: dict) -> pd.DataFrame : 
  "Sépare les sous clefs lignes budget, sans nettoyage"
  ligne_budget = data_dict['DocumentBudgetaire']['Budget']['LigneBudget']
  df_ligne_budget = pd.DataFrame(ligne_budget)
  return df_ligne_budget
 
-def v2_parse_metadonnees(data_dict : dict) -> pd.DataFrame : 
+def parse_metadonnees(data_dict : dict) -> pd.DataFrame : 
  "Sépare les sous clefs de métadonnées, sans nettoyage"
  metadonnees = data_dict['DocumentBudgetaire']['EnTeteDocBudgetaire']
  df_metadonnees = pd.DataFrame(metadonnees)
  return df_metadonnees
 
-def v2_parse_schema(data_dict : dict) -> pd.DataFrame : 
+def parse_schema(data_dict : dict) -> pd.DataFrame : 
  "Sépare la version schema sans nettoyage"
  version_schema = data_dict['DocumentBudgetaire']['VersionSchema']['@V']
  df_schema = pd.DataFrame({"VersionSchema": [version_schema]})
  return df_schema
 
-def v2_parse_date(data_dict : dict) -> pd.DataFrame : 
+def parse_date(data_dict : dict) -> pd.DataFrame : 
  date = data_dict['DocumentBudgetaire']['Budget']['BlocBudget']
  df_date = pd.DataFrame(date)
  return df_date
 
-def v2_assemblage(df_principal: pd.DataFrame, 
+def assemblage(df_principal: pd.DataFrame, 
                          df_meta: pd.DataFrame, 
                          df_schem: pd.DataFrame,
                          df_date : pd.DataFrame) -> pd.DataFrame:
@@ -98,7 +99,7 @@ def v2_assemblage(df_principal: pd.DataFrame,
  df_final = df_final.dropna(axis=1, how='all')
  return df_final
 
-def v2_nettoyage_lambda(df : pd.DataFrame) -> pd.DataFrame : 
+def nettoyage_lambda(df : pd.DataFrame) -> pd.DataFrame : 
  "Nettoie les données pour se débarasser des @V"
  nettoyage = lambda x : str(x).replace("{'@V': '", "").replace("'}", "")
  for col in df.columns : 
@@ -128,7 +129,7 @@ def deplacement_fichier(fichier_a_deplacer, dossier_destination):
  chemin_source.rename(chemin_destination)
 
 @timing_decorator
-def main_v3():
+def main():
  """ Traitement global, extrait et transforme les fichiers XML dans DOSSIER_SOURCE
     pour les insérer dans une bdd et en faire un csv"""
  liste_des_fichier_source = glob.glob(os.path.join(DOSSIER_SOURCE, "*.gz"))
@@ -143,24 +144,24 @@ def main_v3():
   else : 
    data_dict = ouverture_gzip(fichier)
    if data_dict is not None:
-    df_budget = v2_parse_budget(data_dict)
-    df_metadonnees = v2_parse_metadonnees(data_dict)
-    df_schema = v2_parse_schema(data_dict)
-    df_date = v2_parse_date(data_dict)
+    df_budget = parse_budget(data_dict)
+    df_metadonnees = parse_metadonnees(data_dict)
+    df_schema = parse_schema(data_dict)
+    df_date = parse_date(data_dict)
     if df_budget is not None \
             and df_metadonnees is not None \
             and df_schema is not None \
             and df_date is not None:
-     df_final = v2_assemblage(
+     df_final = assemblage(
                 df_budget, df_metadonnees, df_schema, df_date)
      liste_des_df.append(df_final)
      logging.info(f'Fin du travail sur {fichier}')
      deplacement_fichier(fichier, DOSSIER_SORTIE)
  df_session = pd.concat(liste_des_df, ignore_index = True)
- v2_nettoyage_lambda(df_session)
+ nettoyage_lambda(df_session)
  insertion_bdd(df_session)
  creation_csv()
 
 
 if __name__ == "__main__":
-    main_v3()
+    main()
