@@ -17,7 +17,21 @@ Prise de note :
 - Séparer la créa de csv fait gagner environ une seconde (pas dégeu)
 - Traitement du lambda sur l'ensemble concatené : ~6.8sec
 
+Vitesse étape par étape : 
+
+ouverture_gzip a pris 0.5617 secondes pour s'exécuter.
+v2_parse_budget a pris 0.0040 secondes pour s'exécuter.
+v2_parse_metadonnees a pris 0.0000 secondes pour s'exécuter.
+v2_parse_schema a pris 0.0010 secondes pour s'exécuter.
+v2_parse_date a pris 0.0000 secondes pour s'exécuter.
+v2_assemblage a pris 0.0380 secondes pour s'exécuter.
+v2_nettoyage_lambda a pris 0.0100 secondes pour s'exécuter.
+insertion_bdd a pris 0.2132 secondes pour s'exécuter.
+creation_csv a pris 0.0140 secondes pour s'exécuter.
+
+
 A faire : 
+- Voir si on peut grapiller des dixiemes de secondes sur l'ouverture et sur l'insertion bdd 
 - placer le return true ? 
 - faire des test avec json_normalize
 - faire un push propre sur github
