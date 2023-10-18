@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import pathlib
 import glob
 import gzip 
 import csv
@@ -20,10 +21,8 @@ COLONNES_A_CONSERVER = ['IdFichier', 'Nomenclature', 'DteStr',
                          'MtRARPrec', 'MtPropNouv', 'MtPrev',
                          'CredOuv', 'MtReal', 'MtRAR3112',
                          'OpBudg', 'MtSup_1_Lib', 'MtSup_1_Val',
-                         'MtSup_2_Lib', 'MtSup_2_Val', 'MtSup_3_Lib',
-                         'MtSup_3_Val','CaracSup_1_Lib', 'CaracSup_1_Val', 
-                         'CaracSup_2_Lib', 'CaracSup_2_Val', 'CaracSup_3_Lib',
-                         'CaracSup_3_Val', 'TypOpBudg','OpeCpteTiers' 
+                         'MtSup_2_Lib', 'MtSup_2_Val', 'CaracSup_Lib',
+                         'CaracSup_Val', 'TypOpBudg', 'OpeCpteTiers' 
                         ]
 
 #Parsing et securite du fichier
@@ -48,7 +47,7 @@ def _recherche_id_dans_bdd():
     conn.close()
     return ligne_sql_int
 
-#Extract Lignes_budget
+#Extract Lignes Budget
 def _transformation_MtSup(lignes_budget : dict) -> dict :
  '''Grâce aux spaghettis, il y a deux types de MtSup dans les fichiers,
    des dict et des listes de dict, permet de gérer les deux cas
@@ -78,32 +77,15 @@ def _transformation_MtSup(lignes_budget : dict) -> dict :
  return lignes_budget
 
 def _transformation_CaracSup(lignes_budget : dict) -> dict : 
- '''Grâce aux spaghettis, il y a deux types de MtSup dans les fichiers,
-   des dict et des listes de dict, permet de gérer les deux cas
- '''
+ '''Grâce aux spaghettis, Caracsup a le même probleme que MtSup, gère ces cas'''
  for i in lignes_budget :
-  type_carac_sup = i.get('CaracSup') #Permet de connaitre le type de MtSup
-
-  if isinstance(type_carac_sup, dict) : 
-   dict_carac_sup = i['CaracSup']
-   i['CaracSup_1_Lib'] = {'@V' : dict_carac_sup['@Code']}
-   i['CaracSup_1_Val'] = {'@V' : dict_carac_sup['@V']}
-
-  elif isinstance(type_carac_sup, list) :
-   dict_carac_sup = i['CaracSup']
-   carac_sup_propre = {}
-
-   for z, entry in enumerate(dict_carac_sup, start=1):
-    code = f'CaracSup_{z}_Lib'
-    valeur = f'CaracSup_{z}_Val'
-    carac_sup_propre[code] = entry['@Code']
-    carac_sup_propre[valeur] = entry['@V'] 
-   i.update(carac_sup_propre)
-
+  if isinstance(i.get('CaracSup'), dict) :
+   dict_CaracSup = i['CaracSup']
+   i['CaracSup_Lib'] = {'@V' : dict_CaracSup['@Code']}
+   i['CaracSup_Val'] = {'@V' : dict_CaracSup['@V']}
   else : 
-   pass  
-
- return lignes_budget
+   pass 
+  return lignes_budget
 
 def extract_lignes_budget(data_dict: dict) -> pd.DataFrame : 
  "Sépare les sous clefs lignes budget, sans nettoyage"
@@ -138,7 +120,7 @@ def _assemblage_metadonnees(Id_Fichier : dict, entetedoc : dict, nomenclature : 
  ''' Assemble les dictionnaires des divers métadonnées dans un DataFrame''' 
  colonnes_metadonnees = ['IdFichier', 'Nomenclature', 'DteStr', 'LibelleColl', 'IdColl']
  dict_metadonnees = {**Id_Fichier, **entetedoc, **nomenclature}
- df_metadonnees = pd.DataFrame(dict_metadonnees)
+ df_metadonnees = pd.DataFrame(dict_metadonnees, index = [0])
  df_metadonnees = df_metadonnees[colonnes_metadonnees]
  return df_metadonnees
 
@@ -223,6 +205,3 @@ def main_mi_unitaire_mi_global() :
  insertion_bdd(df_script)
  insertion_csv_methode_bdd()
 
-
-if __name__ == "__main__":
-    main_unitaire()

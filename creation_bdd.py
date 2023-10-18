@@ -1,14 +1,16 @@
 import sqlite3
 
-BDD = 'bdd_actes_budgetaires_gz.db'
+BDD = 'bdd_actes_budgetaires.db'
 
-def creation_bdd() : 
+def creation_bdd_et_csv() : 
+ # Ajoute des colonnes MtSup et CaracSup. 
  conn = sqlite3.connect(BDD)
  cursor = conn.cursor()
  cursor.execute('''
-  CREATE TABLE IF NOT EXISTS acte_budgetaire_gz ( 
-    VersionSchema INT,
-    DteDec DATE,
+  CREATE TABLE IF NOT EXISTS actes_budgetaire ( 
+    IdFichier TEXT,
+    Nomenclature TEXT,
+    DteStr DATE,
     LibelleColl TEXT,
     IdColl INT,
     Nature INT,
@@ -28,13 +30,25 @@ def creation_bdd() :
     MtReal REAL,
     MtRAR3112 INT,
     OpBudg INT,
+    MtSup_1_Lib TEXT,
+    MtSup_1_Val REAL,
+    MtSup_2_Lib TEXT,
+    MtSup_2_Val REAL,
+    MtSup_3_Lib TEXT,
+    MtSup_3_Val REAL,         
+    CaracSup_1_Lib TEXT,
+    CaracSup_1_Val REAL,   
+    CaracSup_2_Lib TEXT,
+    CaracSup_2_Val REAL,            
+    CaracSup_3_Lib TEXT,
+    CaracSup_3_Val REAL,   
     TypOpBudg INT,
     OpeCpteTiers INT
                 ) 
                 ''')
  conn.commit()
  conn.close()
-
+ 
 
 if __name__ == "__main__":
-    creation_bdd()
+    creation_bdd_et_csv()
