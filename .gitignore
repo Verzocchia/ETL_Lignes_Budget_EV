@@ -1,6 +1,9 @@
 traitement_en_cours/
 traite/
+todo/
 *.gz
 *.xml
 *.log
 *.db
+donnees_lignes_budgets.csv
+test/
