@@ -2,10 +2,15 @@ import requests
 from lxml import etree 
 import pandas as pd 
 import os
+import sqlite3
 
+DOSSIER_PARENT = "."
 URL_MERE_PLAN_DE_COMPTE = "http://odm-budgetaire.org/composants/normes/"
 PLAN_COMPTE = "planDeCompte.xml"
 
+BDD = ''
+DOSSIER_TRANSCODAGE = "../csv_transcodage/"
+ANNEE = '2020'
 def recherche_plan_de_compte(annee, nomenclature) : 
  url_dossier = URL_MERE_PLAN_DE_COMPTE + f"{annee}/" + f"{nomenclature.split('-')[0]}/" + f"{nomenclature.split('-')[1]}/"
  return url_dossier
