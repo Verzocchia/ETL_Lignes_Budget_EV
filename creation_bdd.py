@@ -2,7 +2,7 @@ import sqlite3
 
 BDD = 'bdd_actes_budgetaires.db'
 
-def creation_bdd_et_csv() : 
+def creation_table_ligne_budget() : 
  # Ajoute des colonnes MtSup et CaracSup. 
  conn = sqlite3.connect(BDD)
  cursor = conn.cursor()
@@ -49,6 +49,90 @@ def creation_bdd_et_csv() :
  conn.commit()
  conn.close()
  
+def creation_tables_transcodage() :
+ ''' Créer les 5 tables de transcodage, 
+ Code est considéré comme un texte pour que les 001 ne deviennent pas des 1'''
+ conn = sqlite3.connect(BDD)
+ cursor = conn.cursor()
+ #Creation Table Nature
+ cursor.execute('''
+  CREATE TABLE IF NOT EXISTS Transcode_Nature (
+   Code TEXT,       
+   Lib_court TEXT, 
+   Libelle TEXT,
+   Section TEXT,
+   Special INT,
+   TypeChapitre TEXT,
+   Nomenclature TEXT) ''')
+
+ #Creation Table Cont Nat
+ cursor.execute('''
+  CREATE TABLE IF NOT EXISTS Transcode_Nature_Compte (
+                Code TEXT, 
+                DEquip TEXT,
+                DOES TEXT,
+                DOIS TEXT,
+                DR TEXT,
+                Lib_court TEXT,
+                Libelle TEXT,
+                REquip INT,
+                ROES TEXT,
+                ROIS TEXT,
+                RR TEXT, 
+                RegrTotalise TEXT,
+                Supprime TEXT,
+                SupprimeDepuis TEXT,
+                Nomenclature TEXT
+  )''') 
+
+ #Creation Table Fonction
+ cursor.execute('''
+  CREATE TABLE IF NOT EXISTS Transcode_Fonction (
+                Code TEXT,
+                Lib_court	TEXT,
+                Libelle	TEXT,
+                Section	TEXT,
+                Special	INT,
+                TypeChapitre TEXT,
+                Nomenclature TEXT
+  )''')
+ 
+ #Creation Table Fonction Compte
+
+ cursor.execute('''
+  CREATE TABLE IF NOT EXISTS Transcode_Fonction_Compte (
+                Code TEXT,
+                DEquip	TEXT,
+                DOES	TEXT,
+                DOIS	TEXT,
+                DR	TEXT,
+                Lib_court	TEXT,
+                Libelle	TEXT,
+                REquip	TEXT,
+                ROES	TEXT,
+                ROIS	TEXT,
+                RR	TEXT,
+                RegrTotalise	TEXT,
+                Supprime	TEXT,
+                SupprimeDepuis	TEXT,
+                Nomenclature TEXT
+  )''')
+ 
+ #Creation Table Fonction Ref 
+ cursor.execute('''
+  CREATE TABLE IF NOT EXISTS Transcode_Fonction_RefFonctionnelles (
+                Code TEXT,
+                Lib_court	TEXT,
+                Libelle	TEXT,
+                Nomenclature TEXT
+  )''')
+ conn.commit()
+ conn.close()
+
+
+def creation_bdd() :
+ creation_table_ligne_budget()
+ creation_tables_transcodage()  
 
 if __name__ == "__main__":
-    creation_bdd_et_csv()
+    creation_bdd()
