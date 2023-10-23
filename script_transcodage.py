@@ -40,123 +40,129 @@ def _recherche_plan_de_compte(annee, nomenclature) :
  return adresse_du_xml
 
 def scrap_plan_de_compte(annee_cible) -> dict:
- Liste_adresse = []
- Liste_nomenclature = _recherche_nomenclature_dans_bdd()
- for i in Liste_nomenclature :
-  Liste_adresse.append(_recherche_plan_de_compte(annee_cible, i))
- Dico_nomenclatures = dict(zip(Liste_adresse, Liste_nomenclature))
- return Dico_nomenclatures
+ liste_adresse = []
+ liste_nomenclature = _recherche_nomenclature_dans_bdd()
+ for i in liste_nomenclature :
+  liste_adresse.append(_recherche_plan_de_compte(annee_cible, i))
+ dico_nomenclatures = dict(zip(liste_adresse, liste_nomenclature))
+ return dico_nomenclatures
 
 #Traitement xml par xml
 
 def racine_transcodage(adresse) :
  ''' Créer la racine lxml du xml ''' 
- Requete = requests.get(adresse + PLAN_COMPTE)
- Racine = etree.fromstring(Requete.content)
- Enfants = Racine.getchildren()
- return Enfants
+ requete = requests.get(adresse + PLAN_COMPTE)
+ racine = etree.fromstring(requete.content)
+ enfants = racine.getchildren()
+ return enfants
 
-def extraction_nature(Enfants, nomenclature) -> pd.DataFrame: 
+def extraction_nature(enfants, nomenclature) -> pd.DataFrame: 
  ''' Permet de récupérer les lignes de la branche Nature ( Nature et ContNat )'''
- Nature_Chapitre = Enfants[0].getchildren()[0].xpath(".//*[@Code]")
- Nature_Compte = Enfants[0].getchildren()[1].xpath(".//*[@Code]")
- Liste_Nature_Chapitre = []
- Liste_Nature_Compte = []
+ nature_chapitre = enfants[0].getchildren()[0].xpath(".//*[@Code]")
+ nature_compte = enfants[0].getchildren()[1].xpath(".//*[@Code]")
+ liste_nature_chapitre = []
+ liste_nature_compte = []
 
- for i in Nature_Chapitre :
-  Liste_Nature_Chapitre.append(i.attrib)
- df_Nature_Chapitre = pd.DataFrame(Liste_Nature_Chapitre)
- df_Nature_Chapitre['Nomenclature'] = nomenclature
+ for i in nature_chapitre :
+  liste_nature_chapitre.append(i.attrib)
+ df_nature_chapitre = pd.DataFrame(liste_nature_chapitre)
+ df_nature_chapitre['Nomenclature'] = nomenclature
 
- for i in Nature_Compte : 
-  Liste_Nature_Compte.append(i.attrib)
- df_Nature_Compte = pd.DataFrame(Liste_Nature_Compte)
- df_Nature_Compte['Nomenclature'] = nomenclature
+ for i in nature_compte : 
+  liste_nature_compte.append(i.attrib)
+ df_nature_compte = pd.DataFrame(liste_nature_compte)
+ df_nature_compte['Nomenclature'] = nomenclature
 
- return df_Nature_Chapitre, df_Nature_Compte
+ return df_nature_chapitre, df_nature_compte
 
-def extraction_fonction(Enfants, nomenclature) -> pd.DataFrame:
+def extraction_fonction(enfants, nomenclature) -> pd.DataFrame:
  ''' Permet de récupérer les lignes de la branche Fonction ( Fonction et Fonction Compte et Fonction ref, ret, machin )'''
- Fonction_chapitre = Enfants[1].getchildren()[0].xpath(".//*[@Code]")
- Fonction_compte = Enfants[1].getchildren()[1].xpath(".//*[@Code]")
- Fonction_ret = Enfants[1].getchildren()[2].xpath(".//*[@Code]")
+ fonction_chapitre = enfants[1].getchildren()[0].xpath(".//*[@Code]")
+ fonction_compte = enfants[1].getchildren()[1].xpath(".//*[@Code]")
+ fonction_ret = enfants[1].getchildren()[2].xpath(".//*[@Code]")
 
- Liste_Fonction_Chapitre = []
- Liste_Fonction_Compte = []
- Liste_Fonction_Ret = []
+ liste_fonction_chapitre = []
+ liste_fonction_compte = []
+ liste_fonction_ret = []
 
- for i in Fonction_chapitre:
-    Liste_Fonction_Chapitre.append(i.attrib)
- df_Fonction_Chapitre = pd.DataFrame(Liste_Fonction_Chapitre)
- df_Fonction_Chapitre['Nomenclature'] = nomenclature
+ for i in fonction_chapitre:
+    liste_fonction_chapitre.append(i.attrib)
+ df_fonction_chapitre = pd.DataFrame(liste_fonction_chapitre)
+ df_fonction_chapitre['Nomenclature'] = nomenclature
 
- for i in Fonction_compte:
-    Liste_Fonction_Compte.append(i.attrib)
- df_Fonction_Compte = pd.DataFrame(Liste_Fonction_Compte)
- df_Fonction_Compte['Nomenclature'] = nomenclature
+ for i in fonction_compte:
+    liste_fonction_compte.append(i.attrib)
+ df_fonction_compte = pd.DataFrame(liste_fonction_compte)
+ df_fonction_compte['Nomenclature'] = nomenclature
 
- for i in Fonction_ret:
-    Liste_Fonction_Ret.append(i.attrib)
- df_Fonction_Ret = pd.DataFrame(Liste_Fonction_Ret)
- df_Fonction_Ret['Nomenclature'] = nomenclature
+ for i in fonction_ret:
+    liste_fonction_ret.append(i.attrib)
+ df_fonction_ret = pd.DataFrame(liste_fonction_ret)
+ df_fonction_ret['Nomenclature'] = nomenclature
 
- return df_Fonction_Chapitre, df_Fonction_Compte, df_Fonction_Ret
+ return df_fonction_chapitre, df_fonction_compte, df_fonction_ret
 
 #Securite si ODM nous dit adieu
 
-def _ajout_origine(df_Nat, df_ContNat, df_Fon, df_ContFon, df_FonRet) -> pd.DataFrame : 
+def _ajout_origine(df_nat, df_contnat, df_fon, df_contfon, df_fonret) -> pd.DataFrame : 
  ''' Ajout de l'origine uniquement pour la création d'un csv commun'''
- df_Nat_Save = df_Nat.copy()
- df_Nat_Save['Origine'] = 'Nature'
+ df_nat_save = df_nat.copy()
+ df_nat_save['Origine'] = 'Nature'
 
- df_ContNat_Save = df_ContNat.copy()
- df_ContNat_Save['Origine'] = 'Nature_Compte'
+ df_contnat_save = df_contnat.copy()
+ df_contnat_save['Origine'] = 'Nature_Compte'
 
- df_Fon_Save = df_Fon.copy()
- df_Fon_Save['Origine'] = 'Nature_Compte'
+ df_fon_save = df_fon.copy()
+ df_fon_save['Origine'] = 'Nature_Compte'
 
- df_ContFon_Save = df_ContFon.copy()
- df_ContFon_Save['Origine'] = 'Fonction Compte'
+ df_contfon_save = df_contfon.copy()
+ df_contfon_save['Origine'] = 'Fonction Compte'
  
- df_FonRet_Save = df_FonRet.copy()
- df_FonRet_Save['Origine'] = 'Fonction RefFonctionnelles'
- return df_Nat_Save, df_ContNat_Save, df_Fon_Save, df_ContFon_Save, df_FonRet_Save
+ df_fonret_save = df_fonret.copy()
+ df_fonret_save['Origine'] = 'Fonction RefFonctionnelles'
+ return df_nat_save, df_contnat_save, df_fon_save, df_contfon_save, df_fonret_save
  
-def creation_csv_commun(df_Nat, df_ContNat, df_Fon, df_ContFon, df_FonRet, nomenclature) :
+def creation_csv_commun(df_nat, df_contnat, df_fon, df_contfon, df_fonret, nomenclature) :
  ''' Permet de créer une sauvegarde en brut au cas où'''
- df_Nat_2, df_ContNat_2, df_Fon_2, df_ContFon_2, df_FonRet_2 = _ajout_origine(
-   df_Nat, df_ContNat, df_Fon, df_ContFon, df_FonRet)
+ df_nat_2, df_contnat_2, df_fon_2, df_contfon_2, df_fonret_2 = _ajout_origine(
+   df_nat, df_contnat, df_fon, df_contfon, df_fonret)
  
- df_uni = pd.concat([df_Nat_2, df_ContNat_2, df_Fon_2, df_ContFon_2, df_FonRet_2], 
+ df_uni = pd.concat([df_nat_2, df_contnat_2, df_fon_2, df_contfon_2, df_fonret_2], 
                     ignore_index= True)
  fichier_csv = os.path.join(DOSSIER_TRANSCODAGE, f"{nomenclature}.csv")
  df_uni.to_csv(fichier_csv, index = False)
 
-#Insertion bdd
-
-def insertion_dans_bdd(df_Nat, df_ContNat, df_Fon, df_ContFon, df_FonRet) : 
- """ insert dans une bdd les données maintenant transformées et en sort un csv à jour """
- chemin_bdd = os.path.join(DOSSIER_PARENT, BDD)
- conn = sqlite3.connect(chemin_bdd)
- df_Nat.to_sql('Transcode_Nature', conn,
-                    if_exists='append', index=False)
- df_ContNat.to_sql('Transcode_Nature_Compte', conn,
-                    if_exists='append', index=False) 
- df_Fon.to_sql('Transcode_Fonction', conn,
-                    if_exists='append', index=False)
- df_ContFon.to_sql('Transcode_Fonction_Compte', conn,
-                    if_exists='append', index=False)
- df_FonRet.to_sql('Transcode_Fonction_RefFonctionnelles', conn,
-                    if_exists='append', index=False)
+def creation_csv_simple(nomenclature) :
+ ''' Attention, c'est pas valable, ça ne fonctionne toujours pas, doit faire une selection des 4 tables voulues
+ A voir si on préfère un csv par type de transco (facile) ou par type de nomenclature (un poil plus long, 
+ mais on va pas oser dire que c'est difficile )'''
+ conn = sqlite3.connect(BDD)
+ cursor = conn.cursor()
+ info = cursor.execute('''         ''')
+ df = pd.DataFrame(info)
+ fichier_csv = os.path.join(DOSSIER_TRANSCODAGE, f"{nomenclature}.csv")
+ df.to_csv(fichier_csv, index=False)
  conn.commit()
  conn.close()
 
- Liste_adresse = []
- Liste_nomenclature = _recherche_nomenclature_dans_bdd()
- for i in Liste_nomenclature :
-  Liste_adresse.append(_recherche_plan_de_compte(annee_cible, i))
- Dico_nomenclatures = dict(zip(Liste_adresse, Liste_nomenclature))
- return Dico_nomenclatures
+#Insertion bdd
+
+def insertion_dans_bdd(df_nat, df_contnat, df_fon, df_contfon, df_fonret) : 
+ """ insert dans une bdd les données maintenant transformées et en sort un csv à jour """
+ chemin_bdd = os.path.join(DOSSIER_PARENT, BDD)
+ conn = sqlite3.connect(chemin_bdd)
+ df_nat.to_sql('Transcode_Nature', conn,
+                    if_exists='append', index=False)
+ df_contnat.to_sql('Transcode_Nature_Compte', conn,
+                    if_exists='append', index=False) 
+ df_fon.to_sql('Transcode_Fonction', conn,
+                    if_exists='append', index=False)
+ df_contfon.to_sql('Transcode_Fonction_Compte', conn,
+                    if_exists='append', index=False)
+ df_fonret.to_sql('Transcode_Fonction_RefFonctionnelles', conn,
+                    if_exists='append', index=False)
+ conn.commit()
+ conn.close()
 
 def scraping_transcodage_to_bdd_2020() : 
  dico_adresse_xml = scrap_plan_de_compte(ANNEE)

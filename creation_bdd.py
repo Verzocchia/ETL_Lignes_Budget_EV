@@ -1,5 +1,6 @@
 import sqlite3
 
+""" Crée les tables vierges dans lesquelles on va insérer les données voulues via les scripts etl_fichier_gz et script_transcodage"""
 BDD = 'bdd_actes_budgetaires.db'
 
 def creation_table_ligne_budget() : 

@@ -37,8 +37,8 @@ def parse_fichier(chemin) :
 
 def _isolement_id(fichier) : 
  "Extrait l'id du nom du fichier pour la liste comprehension de securité"
- val_IdFichier = fichier.split("-")[-1].split('.')[0]
- return val_IdFichier
+ val_id_fichier = fichier.split("-")[-1].split('.')[0]
+ return val_id_fichier
 
 def _recherche_id_dans_bdd():
     conn = sqlite3.connect(BDD)
@@ -54,18 +54,18 @@ def _transformation_MtSup(lignes_budget : dict) -> dict :
    des dict et des listes de dict, permet de gérer les deux cas
  '''
  for i in lignes_budget :
-  type_MtSup = i.get('MtSup') #Permet de connaitre le type de MtSup
+  type_mtsup = i.get('MtSup') #Permet de connaitre le type de MtSup
 
-  if isinstance(type_MtSup, dict) : 
-   dict_MtSup = i['MtSup']
-   i['MtSup_1_Lib'] = {'@V' : dict_MtSup['@Code']}
-   i['MtSup_1_Val'] = {'@V' : dict_MtSup['@V']}
+  if isinstance(type_mtsup, dict) : 
+   dict_mtsup = i['MtSup']
+   i['MtSup_1_Lib'] = {'@V' : dict_mtsup['@Code']}
+   i['MtSup_1_Val'] = {'@V' : dict_mtsup['@V']}
 
-  elif isinstance(type_MtSup, list) :
-   dict_MtSup = i['MtSup']
+  elif isinstance(type_mtsup, list) :
+   dict_mtsup = i['MtSup']
    mtsup_propre = {}
 
-   for z, entry in enumerate(dict_MtSup, start=1):
+   for z, entry in enumerate(dict_mtsup, start=1):
     code = f'MtSup_{z}_Lib'
     valeur = f'MtSup_{z}_Val'
     mtsup_propre[code] = entry['@Code']
@@ -117,9 +117,9 @@ def extract_lignes_budget(data_dict: dict) -> pd.DataFrame :
 #Extract Metadonnees
 def _extract_id(fichier) -> dict: 
  "Extrait l'id sous forme de dictionnaire pour le traitement"
- val_IdFichier = fichier.split("-")[-1].split('.')[0]
- IdFichier_dict = {"IdFichier" : val_IdFichier}
- return IdFichier_dict
+ val_id_fichier = fichier.split("-")[-1].split('.')[0]
+ idfichier_dict = {"IdFichier" : val_id_fichier}
+ return idfichier_dict
 
 def _extract_entete(data_dict : dict) -> dict : 
  '''Extrait l'entete docbudgetaire pour préaprer les métadonnées
@@ -130,24 +130,24 @@ def _extract_entete(data_dict : dict) -> dict :
 
 def _extract_nomenclature(data_dict : dict) -> dict : 
  '''La nomenclature se situe dans une autre branche, l'extrait individuellement'''
- Val_Nomenclature = data_dict['DocumentBudgetaire']['Budget']['EnTeteBudget']['Nomenclature']['@V']
- Nomenclature_dict = {"Nomenclature" : Val_Nomenclature}
- return Nomenclature_dict
+ val_nomenclature = data_dict['DocumentBudgetaire']['Budget']['EnTeteBudget']['Nomenclature']['@V']
+ nomenclature_dict = {"Nomenclature" : val_nomenclature}
+ return nomenclature_dict
 
-def _assemblage_metadonnees(Id_Fichier : dict, entetedoc : dict, nomenclature : dict) -> pd.DataFrame :
+def _assemblage_metadonnees(id_fichier : dict, entetedoc : dict, nomenclature : dict) -> pd.DataFrame :
  ''' Assemble les dictionnaires des divers métadonnées dans un DataFrame''' 
  colonnes_metadonnees = ['IdFichier', 'Nomenclature', 'DteStr', 'LibelleColl', 'IdColl']
- dict_metadonnees = {**Id_Fichier, **entetedoc, **nomenclature}
+ dict_metadonnees = {**id_fichier, **entetedoc, **nomenclature}
  df_metadonnees = pd.DataFrame(dict_metadonnees)
  df_metadonnees = df_metadonnees[colonnes_metadonnees]
  return df_metadonnees
 
 def extract_metadonnees(data_dict : dict, fichier) -> pd.DataFrame :
  ''' assemblage de plusieurs fonctions, objectif lisibilité'''
- IdFichier = _extract_id(fichier)
- Entete = _extract_entete(data_dict)
- Nomenclature = _extract_nomenclature(data_dict)
- df_metadonnees = _assemblage_metadonnees(IdFichier, Entete, Nomenclature)
+ id_fichier = _extract_id(fichier)
+ entete = _extract_entete(data_dict)
+ nomenclature = _extract_nomenclature(data_dict)
+ df_metadonnees = _assemblage_metadonnees(id_fichier, entete, nomenclature)
  return df_metadonnees
 
 #Creation du df final et nettoyage
@@ -199,8 +199,8 @@ def insertion_csv_methode_bdd() :
  conn.close()
 
 def main_unitaire() : 
- Liste_fichiers_safe = [fichier for fichier in FICHIERS_TODO if int(_isolement_id(fichier)) not in _recherche_id_dans_bdd()]
- for fichier_safe in Liste_fichiers_safe :
+ liste_fichiers_safe = [fichier for fichier in FICHIERS_TODO if int(_isolement_id(fichier)) not in _recherche_id_dans_bdd()]
+ for fichier_safe in liste_fichiers_safe :
   data_dict = parse_fichier(fichier_safe)
   df_lignes_budget = extract_lignes_budget(data_dict)
   df_metadonnees = extract_metadonnees(data_dict, fichier_safe)
@@ -210,15 +210,15 @@ def main_unitaire() :
  insertion_csv_methode_bdd()
 
 def main_mi_unitaire_mi_global() :
- Liste_fichiers_safe = [fichier for fichier in FICHIERS_TODO if int(_isolement_id(fichier)) not in _recherche_id_dans_bdd()]
- Liste_df = []
- for fichier_safe in Liste_fichiers_safe :
+ liste_fichiers_safe = [fichier for fichier in FICHIERS_TODO if int(_isolement_id(fichier)) not in _recherche_id_dans_bdd()]
+ liste_des_df = []
+ for fichier_safe in liste_fichiers_safe :
   data_dict = parse_fichier(fichier_safe)
   df_lignes_budget = extract_lignes_budget(data_dict)
   df_metadonnees = extract_metadonnees(data_dict, fichier_safe)
   df_fichier_sale = assemblage_metadonnees_et_lignes_budgets(df_lignes_budget, df_metadonnees)
-  Liste_df.append(df_fichier_sale)
- df_script_sale = pd.concat(Liste_df, ignore_index= True) 
+  liste_des_df.append(df_fichier_sale)
+ df_script_sale = pd.concat(liste_des_df, ignore_index= True) 
  df_script = nettoyage_df(df_script_sale)
  insertion_bdd(df_script)
  insertion_csv_methode_bdd()
