@@ -3,9 +3,7 @@ import sqlite3
 """ Crée les tables vierges dans lesquelles on va insérer les données voulues via les scripts etl_fichier_gz et script_transcodage"""
 BDD = 'bdd_actes_budgetaires.db'
 
-def creation_table_ligne_budget() : 
- # Ajoute des colonnes MtSup et CaracSup. 
- conn = sqlite3.connect(BDD)
+def creation_table_ligne_budget(conn = 'connection') : 
  cursor = conn.cursor()
  cursor.execute('''
   CREATE TABLE IF NOT EXISTS actes_budgetaire ( 
@@ -47,93 +45,44 @@ def creation_table_ligne_budget() :
     OpeCpteTiers INT
                 ) 
                 ''')
- conn.commit()
- conn.close()
  
-def creation_tables_transcodage() :
- ''' Créer les 5 tables de transcodage, 
- Code est considéré comme un texte pour que les 001 ne deviennent pas des 1'''
- conn = sqlite3.connect(BDD)
+
+def creation_table_transcodage_unique(conn = 'connection') : 
+ ''' Crée la table unique de transcodage,
+  -Code est considéré comme un texte pour que les 001 ne deviennent pas des 1
+  -Colonne "Categorie" ajoutée, contient soit Nature, Nature_compte, Fonction, Fonction_compte, Fonction_rompte_ref''' 
  cursor = conn.cursor()
- #Creation Table Nature
  cursor.execute('''
-  CREATE TABLE IF NOT EXISTS Transcode_Nature (
+  CREATE TABLE IF NOT EXISTS Transcodage (
    Code TEXT,       
    Lib_court TEXT, 
    Libelle TEXT,
    Section TEXT,
    Special INT,
    TypeChapitre TEXT,
-   Nomenclature TEXT) ''')
+   DEquip TEXT,
+   REquip INT,
+   DOES TEXT,
+   DOIS TEXT,
+   DR TEXT,
+   ROES TEXT,
+   ROIS TEXT,
+   RR TEXT, 
+   RegrTotalise TEXT,
+   Supprime TEXT,
+   SupprimeDepuis TEXT,
+   Nomenclature TEXT           
+                ) 
+                ''')
 
- #Creation Table Cont Nat
- cursor.execute('''
-  CREATE TABLE IF NOT EXISTS Transcode_Nature_Compte (
-                Code TEXT, 
-                DEquip TEXT,
-                DOES TEXT,
-                DOIS TEXT,
-                DR TEXT,
-                Lib_court TEXT,
-                Libelle TEXT,
-                REquip INT,
-                ROES TEXT,
-                ROIS TEXT,
-                RR TEXT, 
-                RegrTotalise TEXT,
-                Supprime TEXT,
-                SupprimeDepuis TEXT,
-                Nomenclature TEXT
-  )''') 
-
- #Creation Table Fonction
- cursor.execute('''
-  CREATE TABLE IF NOT EXISTS Transcode_Fonction (
-                Code TEXT,
-                Lib_court	TEXT,
-                Libelle	TEXT,
-                Section	TEXT,
-                Special	INT,
-                TypeChapitre TEXT,
-                Nomenclature TEXT
-  )''')
  
- #Creation Table Fonction Compte
-
- cursor.execute('''
-  CREATE TABLE IF NOT EXISTS Transcode_Fonction_Compte (
-                Code TEXT,
-                DEquip	TEXT,
-                DOES	TEXT,
-                DOIS	TEXT,
-                DR	TEXT,
-                Lib_court	TEXT,
-                Libelle	TEXT,
-                REquip	TEXT,
-                ROES	TEXT,
-                ROIS	TEXT,
-                RR	TEXT,
-                RegrTotalise	TEXT,
-                Supprime	TEXT,
-                SupprimeDepuis	TEXT,
-                Nomenclature TEXT
-  )''')
- 
- #Creation Table Fonction Ref 
- cursor.execute('''
-  CREATE TABLE IF NOT EXISTS Transcode_Fonction_RefFonctionnelles (
-                Code TEXT,
-                Lib_court	TEXT,
-                Libelle	TEXT,
-                Nomenclature TEXT
-  )''')
- conn.commit()
- conn.close()
-
 
 def creation_bdd() :
- creation_table_ligne_budget()
- creation_tables_transcodage()  
+ connection = sqlite3.connect(BDD)
+ creation_table_ligne_budget(conn = connection)
+ creation_table_transcodage_unique(conn = connection)  
+ connection.commit()
+ connection.close()
 
 if __name__ == "__main__":
     creation_bdd()
