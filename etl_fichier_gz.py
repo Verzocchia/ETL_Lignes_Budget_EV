@@ -49,32 +49,27 @@ def _recherche_id_dans_bdd():
     return ligne_sql_int
 
 #Extract Lignes_budget
-def _transformation_MtSup(lignes_budget : dict) -> dict :
+def _transformation_MtSup(lignes_budget: dict) -> dict:
  '''Grâce aux spaghettis, il y a deux types de MtSup dans les fichiers,
-   des dict et des listes de dict, permet de gérer les deux cas
- '''
- for i in lignes_budget :
-  type_mtsup = i.get('MtSup') #Permet de connaitre le type de MtSup
-
-  if isinstance(type_mtsup, dict) : 
-   dict_mtsup = i['MtSup']
-   i['MtSup_1_Lib'] = {'@V' : dict_mtsup['@Code']}
-   i['MtSup_1_Val'] = {'@V' : dict_mtsup['@V']}
-
-  elif isinstance(type_mtsup, list) :
-   dict_mtsup = i['MtSup']
-   mtsup_propre = {}
-
-   for z, entry in enumerate(dict_mtsup, start=1):
-    code = f'MtSup_{z}_Lib'
-    valeur = f'MtSup_{z}_Val'
-    mtsup_propre[code] = entry['@Code']
-    mtsup_propre[valeur] = entry['@V'] 
-   i.update(mtsup_propre)
-
-  else : 
-   pass  
-
+       des dict et des listes de dict, permet de gérer les deux cas
+    '''
+ for i in lignes_budget:
+  type_mtsup = i.get('MtSup')  # Permet de connaitre le type de MtSup
+  if type_mtsup is not None:  # Vérifie si la clé 'MtSup' existe
+    if isinstance(type_mtsup, dict):
+      dict_mtsup = type_mtsup
+      i['MtSup_1_Lib'] = {'@V': dict_mtsup.get('@Code', '')}
+      i['MtSup_1_Val'] = {'@V': dict_mtsup.get('@V', '')}
+    elif isinstance(type_mtsup, list):
+      dict_mtsup = i['MtSup']
+      mtsup_propre = {}
+      for z, entry in enumerate(dict_mtsup, start=1):
+        code = f'MtSup_{z}_Lib'
+        valeur = f'MtSup_{z}_Val'
+        mtsup_propre[code] = entry.get('@Code', '')
+        mtsup_propre[valeur] = entry.get('@V', '')
+        i.update(mtsup_propre)
+        
  return lignes_budget
 
 def _transformation_CaracSup(lignes_budget : dict) -> dict : 
@@ -111,7 +106,6 @@ def extract_lignes_budget(data_dict: dict) -> pd.DataFrame :
  ligne_mtsup_propre = _transformation_MtSup(ligne_budget)
  ligne_caracsup_mtsup_propre = _transformation_CaracSup(ligne_mtsup_propre)
  df_ligne_budget = pd.DataFrame(ligne_caracsup_mtsup_propre)
- df_ligne_budget.drop(columns = ['MtSup', 'CaracSup'])
  return df_ligne_budget
 
 #Extract Metadonnees
@@ -198,7 +192,7 @@ def insertion_csv_methode_bdd() :
  conn.commit()
  conn.close()
 
-def main_unitaire() : 
+def main_unitaire() : #La liste comprehension n'est pas unitaire, go faire ça individuellement
  liste_fichiers_safe = [fichier for fichier in FICHIERS_TODO if int(_isolement_id(fichier)) not in _recherche_id_dans_bdd()]
  for fichier_safe in liste_fichiers_safe :
   data_dict = parse_fichier(fichier_safe)
@@ -209,19 +203,6 @@ def main_unitaire() :
   insertion_bdd(df_fichier)
  insertion_csv_methode_bdd()
 
-def main_mi_unitaire_mi_global() :
- liste_fichiers_safe = [fichier for fichier in FICHIERS_TODO if int(_isolement_id(fichier)) not in _recherche_id_dans_bdd()]
- liste_des_df = []
- for fichier_safe in liste_fichiers_safe :
-  data_dict = parse_fichier(fichier_safe)
-  df_lignes_budget = extract_lignes_budget(data_dict)
-  df_metadonnees = extract_metadonnees(data_dict, fichier_safe)
-  df_fichier_sale = assemblage_metadonnees_et_lignes_budgets(df_lignes_budget, df_metadonnees)
-  liste_des_df.append(df_fichier_sale)
- df_script_sale = pd.concat(liste_des_df, ignore_index= True) 
- df_script = nettoyage_df(df_script_sale)
- insertion_bdd(df_script)
- insertion_csv_methode_bdd()
 
 
 if __name__ == "__main__":
