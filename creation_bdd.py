@@ -71,7 +71,8 @@ def creation_table_transcodage_unique(conn = 'connection') :
    RegrTotalise TEXT,
    Supprime TEXT,
    SupprimeDepuis TEXT,
-   Nomenclature TEXT           
+   Nomenclature TEXT,
+   Annee INT          
                 ) 
                 ''')
 
