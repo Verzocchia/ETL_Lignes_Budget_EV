@@ -11,26 +11,12 @@ def url_to_soup(url) :
  requete_soupe = BeautifulSoup(requete.text, 'html.parser')
  return requete_soupe
 
+def creation_chemin_variante(url_du_xml):
+    nom_decoupe = url_du_xml.split('normes/')[1].replace('/', '_').split('_p')[0]
+    chemin_decoupe = os.path.join('.', 'stockage_plan_de_compte', nom_decoupe)
+    return chemin_decoupe
 
-
-def _creation_des_dossiers(nom_chemin) : 
- segments = nom_chemin.split("/")
- chemin_base = "."
- for segment in segments[:-1]:  # Exclure le nom du fichier à la fin
-    chemin_base = os.path.join(chemin_base, segment)
-    if not os.path.exists(chemin_base):
-        os.mkdir(chemin_base)
-
-def creation_chemin(url_xml) : 
- ''' Permet de créer les dossiers liés à l'url '''
- annee_xml_test = url_xml.split('/')[5]
- nomenclature_xml_test = url_xml.split('/')[6]
- sous_nom_text = url_xml.split('/')[7]
- chemin_fichier = f'/stockage_plan_de_compte/{annee_xml_test}/{nomenclature_xml_test}/{sous_nom_text}/PlanDeCompte.xml'
- _creation_des_dossiers(chemin_fichier)
- return chemin_fichier
-
-def creation_chemin_variante(url_du_xml) :
+def creation_chemin_variante_save(url_du_xml) :
  '''Dans cette variante, les planDeCompte sont stockés dans le même dossier, au lieu de tous s'appeller planDeCompte,
  ils ont dans leur nom l'annee et la nomenclature'''
  nom_decoupe = url_du_xml.split('normes/')[1].replace('/', '_').split('_p')[0]
@@ -39,7 +25,7 @@ def creation_chemin_variante(url_du_xml) :
 
 def telechargement_planDeCompte(url_du_xml, chemin_fichier) : 
  requete = requests.get(url_du_xml)
- with open(chemin_fichier, 'w', encoding='utf-8') as dl_local : 
+ with open(chemin_fichier + '.xml', 'w', encoding='utf-8') as dl_local : 
   dl_local.write(requete.text)
 
 
@@ -74,7 +60,9 @@ def main_sans_discrimination() :
    liste_url_xml.append(f'{nomenclature}{dernier_enfant.text}planDeCompte.xml')
 
  for url_xml in liste_url_xml : 
-   nom_fichier = creation_chemin(url_xml)
+   nom_fichier = creation_chemin_variante(url_xml)
    telechargement_planDeCompte(url_xml, nom_fichier)
 
+if __name__ == "__main__":
+    main_sans_discrimination()
 
