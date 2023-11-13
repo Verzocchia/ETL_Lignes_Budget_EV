@@ -54,9 +54,13 @@ def creation_table_transcodage_unique(conn = 'connection') :
  cursor = conn.cursor()
  cursor.execute('''
   CREATE TABLE IF NOT EXISTS Transcodage (
+   Nomenclature TEXT,
+   Annee INT,
+   Categorie TEXT, 
    Code TEXT,       
    Lib_court TEXT, 
    Libelle TEXT,
+   PourEtatSeul BOLEAN, 
    Section TEXT,
    Special INT,
    TypeChapitre TEXT,
@@ -70,9 +74,7 @@ def creation_table_transcodage_unique(conn = 'connection') :
    RR TEXT, 
    RegrTotalise TEXT,
    Supprime TEXT,
-   SupprimeDepuis TEXT,
-   Nomenclature TEXT,
-   Annee INT          
+   SupprimeDepuis TEXT     
                 ) 
                 ''')
 
