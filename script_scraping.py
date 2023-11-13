@@ -25,7 +25,7 @@ def creation_chemin_variante_save(url_du_xml) :
 
 def telechargement_planDeCompte(url_du_xml, chemin_fichier) : 
  requete = requests.get(url_du_xml)
- with open(chemin_fichier + '.xml', 'w', encoding='utf-8') as dl_local : 
+ with open(chemin_fichier + '.xml', 'w') as dl_local : 
   dl_local.write(requete.text)
 
 
