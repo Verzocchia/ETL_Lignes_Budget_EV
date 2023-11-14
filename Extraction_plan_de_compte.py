@@ -8,6 +8,7 @@ DOSSIER_PARENT = "."
 BDD = './bdd_actes_budgetaires.db'
 DOSSIER_TRANSCODAGE = "./csv_transcodage/"
 DOSSIER_FICHIERS_TRANSCO = "./stockage_plan_de_compte/"
+CHEMIN_PLAN_DE_COMPTE = glob.glob(os.path.join(DOSSIER_FICHIERS_TRANSCO, "*.xml"))
 COLONNES_TRANSCODAGE = ['Nomenclature', 'Annee', 'Categorie', 'Code',       
                         'Lib_court', 'Libelle', 'PourEtatSeul', 
                         'Section', 'Special', 'TypeChapitre', 
@@ -15,6 +16,17 @@ COLONNES_TRANSCODAGE = ['Nomenclature', 'Annee', 'Categorie', 'Code',
                         'DR', 'ROES', 'ROIS', 'RR', 
                         'RegrTotalise', 'Supprime', 'SupprimeDepuis']
 
+def isolement_plan_de_compte(plan_de_compte) :
+ plan_de_compte_propre = plan_de_compte.replace("\\", '/').split('/')[2].split('.')[0]
+ return plan_de_compte_propre
+
+def fusionner_annee_nomenclature(conn = 'connect') -> list:
+ ''' Permet de récupérer l'année et la '''
+ cursor = conn.cursor()
+ cursor.execute('''SELECT DISTINCT Annee || '-' || Nomenclature 
+                      FROM Transcodage''')
+ annee_nomenclature = [x[0] for x in cursor.fetchall()]
+ return annee_nomenclature
 
 def parsing_fichier(chemin) : 
  with open(chemin, "rb") as fichier_ouvert:
@@ -25,8 +37,8 @@ def parsing_fichier(chemin) :
 
 def extraction_metadonnees(chemin) : 
  chemin = chemin.replace("\\", '/')
- annee = chemin.split('/')[2].split('_')[0]
- nomenclature = chemin.split('/')[2].split('_', 1)[1].split('.')[0].replace('_', '-', 1)
+ annee = chemin.split('/')[2].split('-')[0]
+ nomenclature = chemin.split('/')[2].split('-', 1)[1].split('.')[0]
  return annee, nomenclature
 
 def extraction_nature(enfants) -> pd.DataFrame: 
@@ -92,25 +104,28 @@ def creation_df_standard(df_nature_chapitre, df_nature_compte,
    df_transco[i] = df_assemblage[i]
  return df_transco
 
-def insertion_dans_bdd(df_transco) : 
+def insertion_dans_bdd(df_transco, conn = 'connect') : 
  """ Insert dans une bdd les données maintenant transformées et en sort un csv à jour """
- chemin_bdd = os.path.join(DOSSIER_PARENT, BDD)
- conn = sqlite3.connect(chemin_bdd)
  df_transco.to_sql('Transcodage', conn,
                     if_exists='append', index=False)
- conn.commit()
- conn.close()
 
 
 def main() : 
- for plan_de_compte in glob.glob(os.path.join(DOSSIER_FICHIERS_TRANSCO, "*.xml")) :
-  enfant = parsing_fichier(plan_de_compte)
-  annee, nomenclature = extraction_metadonnees(plan_de_compte)
-  df_nature1, df_nature2 = extraction_nature(enfant)
-  df_f1, df_f2, df_f3 =  extraction_fonction(enfant)
-  df_test = creation_df_standard(df_nature1, df_nature2, df_f1, df_f2, df_f3, annee, nomenclature)
-  insertion_dans_bdd(df_test)
-
+ for plan_de_compte in CHEMIN_PLAN_DE_COMPTE :
+  try :
+   connect = sqlite3.connect(BDD)
+   if isolement_plan_de_compte(plan_de_compte) not in fusionner_annee_nomenclature(connect) : 
+    enfant = parsing_fichier(plan_de_compte)
+    annee, nomenclature = extraction_metadonnees(plan_de_compte)
+    df_nature1, df_nature2 = extraction_nature(enfant)
+    df_f1, df_f2, df_f3 =  extraction_fonction(enfant)
+    df_test = creation_df_standard(df_nature1, df_nature2, df_f1, df_f2, df_f3, annee, nomenclature)
+    insertion_dans_bdd(df_test, connect)
+   else : 
+    pass 
+  finally : 
+   connect.commit()
+   connect.close()
 
 if __name__ == "__main__":
     main()
