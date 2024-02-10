@@ -5,6 +5,10 @@ todo/
 *.xml
 *.log
 *.db
+*.parquet
+*.csv
+*.png
+*.tmp
 donnees_lignes_budgets.csv
 test/
 stockage_plan_de_compte/
