@@ -11,7 +11,7 @@ from psycopg2 import sql
 TABLE_BLOC_BUDGET_QUERY = """
     CREATE TABLE Bloc_Budget (
         ID SERIAL PRIMARY KEY,
-        Id_Fichier INT NOT NULL,
+        Id_Fichier VARCHAR NOT NULL,
         Nomenclature VARCHAR,
         Exer INT,
         TypOpBudg INT,
@@ -34,29 +34,29 @@ TABLE_BLOC_BUDGET_QUERY = """
         ContOp VARCHAR,
         OpeCpteTiers VARCHAR,
         MtSup VARCHAR,
-        APVote FLOAT,
-        Brut FLOAT,
-        BudgetHorsRAR FLOAT,
-        Comp VARCHAR,
-        ICNE FLOAT,
-        ICNEPrec FLOAT,
-        MtOpeCumul FLOAT,
-        MtOpeInfo FLOAT,
-        Net FLOAT,
-        ProdChaRat FLOAT,
-        RARPrec FLOAT,
+        MtSup.APVote FLOAT,
+        MtSup.Brut FLOAT,
+        MtSup.BudgetHorsRAR FLOAT,
+        MtSup.Comp VARCHAR,
+        MtSup.ICNE FLOAT,
+        MtSup.ICNEPrec FLOAT,
+        MtSup.MtOpeCumul FLOAT,
+        MtSup.MtOpeInfo FLOAT,
+        MtSup.Net FLOAT,
+        MtSup.ProdChaRat FLOAT,
+        MtSup.RARPrec FLOAT,
         CaracSup VARCHAR,
-        TypOpe INT,
-        Section VARCHAR,
-        ChapSpe VARCHAR,
-        ProgAutoLib VARCHAR,
-        ProgAutoNum VARCHAR,
-        VirCredNum VARCHAR,
-        CodeRegion INT
+        CaracSup.TypOpe INT,
+        CaracSup.Section VARCHAR,
+        CaracSup.ChapSpe VARCHAR,
+        CaracSup.ProgAutoLib VARCHAR,
+        CaracSup.ProgAutoNum VARCHAR,
+        CaracSup.VirCredNum VARCHAR,
+        CaracSup.CodeRegion INT
     )"""
 
 TABLE_DOC_BUDGET_QUERY = '''  CREATE TABLE Doc_Budget  (
-    Id_Fichier INT UNIQUE NOT NULL,
+    Id_Fichier VARCHAR UNIQUE NOT NULL,
     Nomenclature VARCHAR,
     Exer SMALLINT,
     Siret BIGINT,
@@ -120,7 +120,7 @@ TABLE_ETABLISSEMENT_QUERY = ''' CREATE TABLE Etablissement (
 
 TABLE_ANNEXE_CHARGE_QUERY = ''' CREATE TABLE Data_Charge (
  ID SERIAL PRIMARY KEY,
- Id_Fichier INTEGER, 
+ Id_Fichier VARCHAR, 
  Exer_Doc INTEGER,
  Exer INTEGER,
  CodTypeCharge VARCHAR,
@@ -133,9 +133,9 @@ TABLE_ANNEXE_CHARGE_QUERY = ''' CREATE TABLE Data_Charge (
  Champ_Editeur VARCHAR
  ) ''' 
 
-TABLE_ANNEXE_CONCOURS_QUERRY =  ''' CREATE TABLE Data_concours ( 
+TABLE_ANNEXE_CONCOURS_QUERY =  ''' CREATE TABLE Data_concours ( 
  ID SERIAL PRIMARY KEY,
- Id_Fichier INTEGER,
+ Id_Fichier VARCHAR,
  Exer_doc INTEGER, 
  CodArticle VARCHAR, 
  CodInvFonc VARCHAR, 
@@ -156,9 +156,7 @@ TABLES = [TABLE_BLOC_BUDGET_QUERY,
         TABLE_DOC_BUDGET_QUERY,
         TABLE_ETABLISSEMENT_QUERY,
         TABLE_ANNEXE_CHARGE_QUERY,
-        TABLE_ANNEXE_CONCOURS_QUERRY ]
-
-
+        TABLE_ANNEXE_CONCOURS_QUERY ]
 
 
 def supression_table(conn) : 
@@ -206,5 +204,5 @@ def main() :
 
     supression_table(conn = con)
 
-    for requete_table in TABLES :
-        creation_table(con, requete_table)
+
+main()
