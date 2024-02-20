@@ -13,7 +13,9 @@ La suite :
 - Se réserver du temps pour explorer les fonctions et libelles comptables et découvrir les 90+ (non fonction ref)
 - Faire une doc 
 
+pour les règles de nommage, généralement on mets "fk_" devant les foreigne key
 
+et pk_ devant les primary
 
 
 
