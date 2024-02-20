@@ -18,5 +18,4 @@ pour les règles de nommage, généralement on mets "fk_" devant les foreigne ke
 et pk_ devant les primary
 
 
-
-
+OpBudg et TypOpBudg sont mal gérés 
