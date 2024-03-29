@@ -1,6 +1,9 @@
 traitement_en_cours/
 traite/
 todo/
+csv/
+parquet/
+*.csv
 *.gz
 *.xml
 *.log
