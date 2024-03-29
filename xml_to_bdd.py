@@ -1,7 +1,3 @@
-''' bdd actuelle : db_test_copy 
-pas de __main__ etc. Car nécessite deux arguments : chemin des xml et chemin de dictionnaire_v2.csv'''
-
-
 import os
 import gzip
 import glob
@@ -11,7 +7,6 @@ import xmltodict
 import pandas as pd
 import sqlalchemy
 from sqlalchemy import MetaData, select, func, Table
-from sqlalchemy.orm import DeclarativeBase
 
 #log
 logger = logging.getLogger(__name__)
@@ -22,9 +17,25 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-engine = sqlalchemy.create_engine('postgresql://verzochia:verzochia@localhost:5432/db_v1')
+engine = sqlalchemy.create_engine('postgresql://verzochia:verzochia@localhost:5432/db_v2')
 conn = engine.connect()
 metadata = MetaData()
+
+LISTE_COL_DOCUMENT_BUDGETAIRE
+
+LISTE_COL_SUPPRESSION_BUDGET = [
+  'Code_nat_compte', 'code_nat_chap', 'Code_nat_chap',
+  'Code_fonc_compte','code_fonc_chap','Code_fonc_chap', 'Code_mixte',
+  'code_chap_mixte']
+
+LISTE_COL_MINIMALE_BUDGET = [
+ 'Id_Fichier','Nomenclature', 'Exer', 'TypOpBudg','Operation', 'Nature', 'ContNat',
+ 'LibCpte', 'Fonction', 'ContFon', 'ArtSpe', 'CodRD', 'MtBudgPrec', 'MtRARPrec',
+ 'MtPropNouv', 'MtPrev', 'OpBudg', 'CredOuv','MtReal', 'MtRAR3112', 'ContOp', 'OpeCpteTiers',
+ 'MtSup', 'MtSup_APVote', 'MtSup_Brut', 'MtSup_BudgetHorsRAR', 'MtSup_Comp', 'MtSup_ICNE', 'MtSup_ICNEPrec',
+ 'MtSup_MtOpeCumul', 'MtSup_MtOpeInfo', 'MtSup_Net', 'MtSup_MtPropNouv', 'MtSup_ProdChaRat', 'MtSup_RARPrec',
+ 'CaracSup', 'CaracSup_TypOpe', 'CaracSup_Section', 'CaracSup_ChapSpe',
+  'CaracSup_ProgAutoLib', 'CaracSup_ProgAutoNum','CaracSup_VirCredNum', 'CaracSup_CodeRegion']
 
 LIST_ANNEXES = ['DATA_AMORTISSEMENT_METHODE', 'DATA_APCP', 'DATA_AUTRE_ENGAGEMENT',
         'DATA_CHARGE', 'DATA_CONCOURS', 'DATA_CONSOLIDATION', 'DATA_CONTRAT_COUV', 
@@ -38,7 +49,7 @@ LIST_ANNEXES = ['DATA_AMORTISSEMENT_METHODE', 'DATA_APCP', 'DATA_AUTRE_ENGAGEMEN
         "DATA_SERVICE_FERROVIAIRE_TER", "DATA_SIGNATAIRE", "DATA_SIGNATURE", 
         "DATA_SOMMAIRE", "DATA_TIERS", "DATA_TRESORERIE", "DATA_VENTILATION", "DATA_FLUX_CROISES"]
 
-LISTE_COL_SUP = [
+LISTE_COL_MAJ_BUDGET = [
     'MtSup_APVote', 'MtSup_Brut', 'MtSup_BudgetHorsRAR', 'MtSup_Comp', 
     'MtSup_ICNE', 'MtSup_ICNEPrec', 'MtSup_MtOpeCumul','MtSup_MtOpeInfo', 
     'MtSup_Net', 'MtSup_ProdChaRat', 'MtSup_RARPrec',
@@ -192,27 +203,237 @@ def nettoyage_colonnes(df_budget, liste_colonnes_propre) :
   df_budget = df_budget.rename(columns=dict_replace)
   return df_budget
 
+def _jointure_libelle_nature_chap(df : pd.DataFrame,
+                                df_nature_chap : pd.DataFrame) -> pd.DataFrame :
+  ''' Necessite l'existence d'une colonne opération, qui est normalement optionnelle'''
+  if 'Operation' in df.columns : 
+    for index, row in df.iterrows():
+      if row['CodRD'] == 'D' and row['OpBudg'] == '1' and row['TypOpBudg'] == '2':
+        df.at[index, 'code_nat_chap'] = row['DOES_nat_compte']
+        df.at[index, 'type_nature'] = 'DOES'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '1' and row['TypOpBudg'] == '2':
+        df.at[index, 'code_nat_chap'] = row['ROES_nat_compte']
+        df.at[index, 'type_nature'] = 'ROES'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '1' and row['TypOpBudg'] == '1':
+        df.at[index, 'code_nat_chap'] = row[ 'DOIS_nat_compte']
+        df.at[index, 'type_nature'] = 'DOIS'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '1' and row['TypOpBudg'] == '1':
+        df.at[index, 'code_nat_chap'] = row[ 'ROIS_nat_compte']
+        df.at[index, 'type_nature'] = 'ROIS'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) and pd.isna(row['Operation']):
+        df.at[index, 'code_nat_chap'] = row['RR_nat_compte']
+        df.at[index, 'type_nature'] = 'RR'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) and pd.isna(row['Operation']):
+        df.at[index, 'code_nat_chap'] = row['DR_nat_compte']
+        df.at[index, 'type_nature'] = 'DR'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) and pd.notna(row['Operation']):
+        df.at[index, 'code_nat_chap'] = row['DEquip_nat_compte']
+        df.at[index, 'type_nature'] = 'DEquip'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) and pd.notna(row['Operation']):
+        df.at[index, 'code_nat_chap'] = row['REquip_nat_compte']
+        df.at[index, 'type_nature'] = 'REquip'
+  else :
+    for index, row in df.iterrows():
+      if row['CodRD'] == 'D' and row['OpBudg'] == '1' and row['TypOpBudg'] == '2':
+        df.at[index, 'code_nat_chap'] = row['DOES_nat_compte']
+        df.at[index, 'type_nature'] = 'DOES'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '1' and row['TypOpBudg'] == '2':
+        df.at[index, 'code_nat_chap'] = row['ROES_nat_compte']
+        df.at[index, 'type_nature'] = 'ROES'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '1' and row['TypOpBudg'] == '1':
+        df.at[index, 'code_nat_chap'] = row['DOIS_nat_compte']
+        df.at[index, 'val_prise'] = 'DOIS'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '1' and row['TypOpBudg'] == '1':
+        df.at[index, 'code_nat_chap'] = row['ROIS_nat_compte']
+        df.at[index, 'type_nature'] = 'ROIS'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) :
+        df.at[index, 'code_nat_chap'] = row['RR_nat_compte']
+        df.at[index, 'type_nature'] = 'RR'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) :
+        df.at[index, 'code_nat_chap'] = row['DR_nat_compte']
+        df.at[index, 'type_nature'] = 'DR' 
 
-def xml_to_bdd(chemin_des_xml, dico_transco_csv) :
+  df['code_nat_chap'] = df['code_nat_chap'].astype(str)
+  df = df.merge(df_nature_chap, 
+                left_on = ['Exer','Nomenclature','code_nat_chap'],
+                right_on = ['Exer','Nomenclature','Code_nat_chap'],
+                how = 'left')
+  return df
+
+def _jointure_libelle_fonction_chap(df : pd.DataFrame, 
+                        df_fonction_chap : pd.DataFrame) -> pd.DataFrame : 
+  ''' Necessite l'existence d'une colonne opération, qui est normalement optionnelle'''
+  if 'Operation' in df.columns : 
+    for index, row in df.iterrows():
+      if row['CodRD'] == 'D' and row['OpBudg'] == '1' and row['TypOpBudg'] == '2':
+        df.at[index, 'code_fonc_chap'] = row['DOES_fonc_compte']
+        df.at[index, 'type_fonction'] = 'DOES'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '1' and row['TypOpBudg'] == '2':
+        df.at[index, 'code_fonc_chap'] = row['ROES_fonc_compte']
+        df.at[index, 'type_fonction'] = 'ROES'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '1' and row['TypOpBudg'] == '1':
+        df.at[index, 'code_fonc_chap'] = row[ 'DOIS_fonc_nc_nc_compte']
+        df.at[index, 'type_fonction'] = 'DOIS'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '1' and row['TypOpBudg'] == '1':
+        df.at[index, 'code_fonc_nc_nc_chap'] = row[ 'R_fonc_nc_nc_nc_nc__fo_fonc__fo_fonc__fonc_nc_compte']
+        df.at[index, 'type_fonction'] = 'ROIS'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) and pd.isna(row['Operation']):
+        df.at[index, 'code_fonc_nc_chap'] = row['RR_fonc_compte']
+        df.at[index, 'type_fonction'] = 'RR'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) and pd.isna(row['Operation']):
+        df.at[index, 'code_fonc_chap'] = row['DR_fonc_compte']
+        df.at[index, 'type_fonction'] = 'DR'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) and pd.notna(row['Operation']):
+        df.at[index, 'code_fonc_chap'] = row['DEquip_fonc_compte']
+        df.at[index, 'type_fonction'] = 'DEquip'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) and pd.notna(row['Operation']):
+        df.at[index, 'code_fonc_chap'] = row['REquip_fonc_compte']
+        df.at[index, 'type_fonction'] = 'REquip'
+  else :
+    for index, row in df.iterrows():
+      if row['CodRD'] == 'D' and row['OpBudg'] == '1' and row['TypOpBudg'] == '2':
+        df.at[index, 'code_fonc_chap'] = row['DOES_fonc_compte']
+        df.at[index, 'type_fonction'] = 'DOES'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '1' and row['TypOpBudg'] == '2':
+        df.at[index, 'code_fonc_chap'] = row['ROES_fonc_compte']
+        df.at[index, 'type_fonction'] = 'ROES'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '1' and row['TypOpBudg'] == '1':
+        df.at[index, 'code_fonc_chap'] = row['DOIS_fonc_compte']
+        df.at[index, 'type_fonction'] = 'DOIS'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '1' and row['TypOpBudg'] == '1':
+        df.at[index, 'code_fonc_chap'] = row['ROIS_fonc_compte']
+        df.at[index, 'type_fonction'] = 'ROIS'
+      elif row['CodRD'] == 'R' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) :
+        df.at[index, 'code_fonc_chap'] = row['RR_fonc_compte']
+        df.at[index, 'type_fonction'] = 'RR'
+      elif row['CodRD'] == 'D' and row['OpBudg'] == '0' and pd.isna(row['TypOpBudg']) :
+        df.at[index, 'code_fonc_chap'] = row['DR_fonc_compte']
+        df.at[index, 'type_fonction'] = 'DR' 
+
+  df['code_fonc_chap'] = df['code_fonc_chap'].astype(str)
+  df = df.merge(df_fonction_chap, 
+                left_on = ['Exer','Nomenclature','code_fonc_chap'],
+                right_on = ['Exer','Nomenclature','Code_fonc_chap'],
+                how = 'left')
+  return df
+
+def _jointure_fonction(df_budget : pd.DataFrame, 
+                              val_NatFonc : str, 
+                              df_fonction_compte : pd.DataFrame, 
+                              df_fonction_chap : pd.DataFrame, 
+                              df_fonction_mixte : pd.DataFrame) -> pd.DataFrame :
+  ''' Permet d'automatiser les jonctions des fonction WIP '''
+  if val_NatFonc == '1' : 
+    None 
+  elif val_NatFonc == '2' : 
+    df_budget = df_budget.merge(df_fonction_compte,
+                  left_on = ['Nomenclature','Exer','Fonction'],
+                  right_on = ['Nomenclature','Exer','Code_fonc_compte'],
+                  how = 'left')
+    df_budget = _jointure_libelle_fonction_chap(df_budget, df_fonction_chap)
+
+  elif val_NatFonc == '3' :
+    df_budget = df_budget.merge(df_fonction_mixte,
+                  left_on = ['Nomenclature','Exer','Fonction'],
+                  right_on = ['Nomenclature','Exer','Code_mixte'],
+                  how = 'left')
+    df_budget = df_budget.merge(df_fonction_chap,
+                  left_on = ['Nomenclature','Exer','code_chap_mixte'], 
+                  right_on = ['Nomenclature','Exer','Code_fonc_chap'], 
+                  how = 'left')
+    df_budget.drop(columns = ['Section_fonc_chap', 'Special_fonc_chap'])
+
+  return df_budget 
+
+def _jointure_nature(df_budget : pd.DataFrame,
+                  df_nature_chap : pd.DataFrame,
+                  df_nature_compte : pd.DataFrame) -> pd.DataFrame : 
+
+  df_budget = df_budget.merge(df_nature_compte,
+                  left_on = ['Nomenclature','Exer','Nature'],
+                  right_on = ['Nomenclature','Exer','Code_nat_compte'],
+                  how = 'left')
+  df_budget = _jointure_libelle_nature_chap(df_budget, df_nature_chap)
+  return df_budget 
+
+def jointure_libelle_comptable(df_budget : pd.DataFrame, 
+                        df_nature_chap : pd.DataFrame,
+                        df_nature_compte : pd.DataFrame, 
+                        df_fonction_chap : pd.DataFrame, 
+                        df_fonction_compte : pd.DataFrame, 
+                        df_fonction_mixte : pd.DataFrame,
+                        LISTE_COL_SUPPRESSION_BUDGET,
+                        valeur_NatFonc) -> pd.DataFrame :
+
+  df_budget = _jointure_nature(df_budget = df_budget, 
+                            df_nature_chap = df_nature_chap,
+                            df_nature_compte = df_nature_compte)
+  df_budget = _jointure_fonction(df_budget, 
+                            df_fonction_chap = df_fonction_chap,
+                            df_fonction_compte = df_fonction_compte,
+                            df_fonction_mixte = df_fonction_mixte, 
+                            val_NatFonc = valeur_NatFonc
+                            )
+
+  for nom in LISTE_COL_SUPPRESSION_BUDGET : 
+    if nom in df_budget.columns : 
+      df_budget = df_budget.drop(columns = [nom])
+  return df_budget
+
+def creation_df_anomalies(df_budget: pd.DataFrame, dict_id: dict) -> pd.DataFrame:
+  ''' Permet de mettre en lumière les différentes anomalies,
+  pour le moment : fonction sans correspondances 
+  
+  Necessite un envoi to_sql et la création de la table associée'''
+  if 'Libelle_fonc_compte' in df_budget.columns :
+   sous_df = df_budget[(df_budget['Libelle_fonc_compte'].isna()) & (~df_budget['Fonction'].isna())]
+  
+   if sous_df.shape[0] == 0 : 
+     None 
+   elif sous_df.shape[0] > 0 : 
+    df_anomalies = pd.DataFrame([dict_id])
+    fonction_sans_ref = sous_df['Fonction'].drop_duplicates().to_list()
+    nb_fonc_sans_ref = len(fonction_sans_ref)
+    data = pd.Series([fonction_sans_ref], index=['fonctions_sans_ref'])
+    df_fonc_sans_ref = pd.DataFrame(data).transpose()
+    df_anomalies = pd.concat([df_anomalies, df_fonc_sans_ref], axis = 1)
+    df_anomalies['nb_fonctions'] = nb_fonc_sans_ref
+    df_anomalies['pourcentage'] = round(sous_df.shape[0] / df_budget.shape[0] * 100, 2)
+        
+    return df_anomalies
+
+
+def xml_to_bdd(chemin_des_xml) :
   ''' Fonction principale : 
   Extrait les données des xml dans le dossier et les envoie dans la table'''
 
   chemin_xml_entree_glob = glob.glob(os.path.join(chemin_des_xml, "*.gz"))
-
-  #Prep transco
-  dico_transco_csv = pd.read_csv(dico_transco_csv)
-  dico_transco = {j['nom_champ']: eval(j['enum']) for i, j in dico_transco_csv.iterrows()}
-
+  print('chemin')
   #Prep verif integrité
-  engine = sqlalchemy.create_engine('postgresql://verzochia:verzochia@localhost:5432/db_test_copy')
+  engine = sqlalchemy.create_engine('postgresql://verzochia:verzochia@localhost:5432/db_v2')
   conn = engine.connect()
   metadata = MetaData()
- 
+  metadata.reflect(engine) 
+  
+  table_bloc_budget = metadata.tables['bloc_budget'] 
+  df_bloc_budget_vide = pd.DataFrame(columns=LISTE_COL_MINIMALE_BUDGET)
+
   class Base(DeclarativeBase):
      pass
  
   class document_budgetaire(Base) :
      __table__ = Table('document_budgetaire', Base.metadata, autoload_with = engine)
+       
+  #Prep transco
+  df_transco = pd.read_sql('Select * from transcodage', engine).drop(columns = 'id')
+  dico_transco = {j['nom_champ']: eval(j['enum']) for i, j in df_transco.iterrows()}
+ 
+  #prep libelle
+  df_nature_compte = pd.read_sql('SELECT * FROM nature_compte', engine).drop(columns = ['id'])
+  df_nature_chap = pd.read_sql('SELECT * FROM nature_chapitre', engine).drop(columns = ['id'])
+  df_fonction_compte = pd.read_sql('SELECT * FROM fonction_compte', engine).drop(columns = ['id'])
+  df_fonction_chap = pd.read_sql('SELECT * FROM fonction_chapitre', engine).drop(columns = ['id'])
+  df_fonction_mixte = pd.read_sql('SELECT * FROM fonction_compte_mixte', engine).drop(columns = ['id'])
 
   for fichier in chemin_xml_entree_glob : 
    id_fichier = extraction_id(fichier)
@@ -236,6 +457,7 @@ def xml_to_bdd(chemin_des_xml, dico_transco_csv) :
                          'Nomenclature' : chemin_nomenclature.get('@V'),
                          'Exer' : chemin_exer.get('@V')}
       dict_id = {'Id_Fichier' : id_fichier}
+      val_natfonc = fichier_parse['DocumentBudgetaire']['Budget']['BlocBudget']['NatFonc']['@V']
 
       #extraction et insertion doc budget (table centrale)
       df_doc_budget = extraction_document_budgetaire(fichier_parse, dictionnaire_id= dict_id)
@@ -245,11 +467,27 @@ def xml_to_bdd(chemin_des_xml, dico_transco_csv) :
 
       #df_budget
       df_budget = extraction_budget(fichier_parse, dict_metadonnees)
+      df_budget = pd.concat([df_budget, df_bloc_budget_vide])
+      df_budget = jointure_libelle_comptable(
+                      df_budget = df_budget, 
+                      df_nature_chap = df_nature_chap,
+                      df_nature_compte = df_nature_compte, 
+                      df_fonction_chap = df_fonction_chap, 
+                      df_fonction_compte = df_fonction_compte, 
+                      df_fonction_mixte = df_fonction_mixte,
+                      LISTE_COL_SUPPRESSION_BUDGET = LISTE_COL_SUPPRESSION_BUDGET,
+                      valeur_NatFonc = val_natfonc, 
+      )
       df_budget = transcodage_bloc(df_budget, dico_transco)
-      df_budget = nettoyage_colonnes(df_budget, LISTE_COL_SUP)
+      df_budget = nettoyage_colonnes(df_budget, LISTE_COL_MAJ_BUDGET)
 
       df_budget.to_sql('bloc_budget', engine ,if_exists = 'append', index = False, method = 'multi')
 
+      df_anomalies = creation_df_anomalies(df_budget, dict_id)
+      if isinstance(df_anomalies, pd.DataFrame) :
+        df_anomalies.to_sql('anomalies', engine ,if_exists = 'append', index = False, method = 'multi')
+      else : 
+        None
       #Annexes 
       chemin_general_annexe = fichier_parse['DocumentBudgetaire']['Budget']['Annexes']
       for data_annexe in LIST_ANNEXES : 
@@ -262,7 +500,12 @@ def xml_to_bdd(chemin_des_xml, dico_transco_csv) :
         df_annexe.to_sql(data_annexe_min, engine, if_exists = 'append', index = False, method = 'multi')
        except Exception as e : 
          None 
-         
+
+        
      except Exception as e : 
        logger.error(f"Error processing file {id_fichier}: {e}")
+  
+  conn.close()
+
+
 

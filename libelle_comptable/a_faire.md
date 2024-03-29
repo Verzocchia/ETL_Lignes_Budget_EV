@@ -1,0 +1,2 @@
+- Passage du scraping et de la crea de csv en dag 
+- Faire le passage en csv auto et pas par années. 
