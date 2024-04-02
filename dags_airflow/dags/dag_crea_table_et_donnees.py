@@ -1165,10 +1165,7 @@ def creation_tables() :
     Code_mixte = Column(String, nullable = True)
     code_chap_mixte = Column(String, nullable = True)
 
- Base.metadata.drop_all(engine)
- Base.metadata.create_all(engine)
-
-class info_siret(Base) : 
+ class info_siret(Base) : 
    __tablename__ = 'info_siret'
    id = Column(Integer, primary_key = True, autoincrement = True)
    CODGEO = Column(String, nullable = True)
@@ -1181,6 +1178,9 @@ class info_siret(Base) :
    siren = Column(String, nullable = True)
    siret = Column(String, nullable = True)
    denominationUniteLegale = Column(String, nullable = True)
+
+ Base.metadata.drop_all(engine)
+ Base.metadata.create_all(engine)
 
 def decoupage_code(code) : 
   if len(code) == 3:
