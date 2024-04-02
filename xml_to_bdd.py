@@ -21,7 +21,6 @@ engine = sqlalchemy.create_engine('postgresql://verzochia:verzochia@localhost:54
 conn = engine.connect()
 metadata = MetaData()
 
-LISTE_COL_DOCUMENT_BUDGETAIRE
 
 LISTE_COL_SUPPRESSION_BUDGET = [
   'Code_nat_compte', 'code_nat_chap', 'Code_nat_chap',
