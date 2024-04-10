@@ -2,7 +2,9 @@ traitement_en_cours/
 traite/
 todo/
 csv/
+__pycache__/ 
 parquet/
+cfu/
 *.csv
 *.gz
 *.xml
