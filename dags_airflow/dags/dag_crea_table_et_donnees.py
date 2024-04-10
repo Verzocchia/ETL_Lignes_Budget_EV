@@ -1,14 +1,23 @@
 import os
+import pandas as pd 
 from datetime import datetime
+
 
 import sqlalchemy 
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData, Table, DateTime, Float, Boolean 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
+import airflow 
+from airflow import DAG 
 from airflow.decorators import dag, task
 from airflow.operators.python import PythonOperator
-from airflow.models import Connection
+from airflow.models import Connection, Variable
+
+def ouverture_connection_postgres(connection_id):
+    conn = Connection.get_connection_from_secrets(connection_id)
+    return sqlalchemy.create_engine(f'postgresql://{conn.login}:{conn.password}@{conn.host}:{conn.port}/{conn.schema}')
+    
 
 @task.branch(task_id="crea_tables")
 def creation_tables() : 
@@ -1196,27 +1205,27 @@ def parquet_to_bdd() :
   engine = ouverture_connection_postgres(Variable.get("pg_conn_id"))
 
   #transfo des données 
-  fco = pd.read_parquet('./data_test/ressources/Fonction_Compte_2020.parquet')
+  fco = pd.read_parquet('./data_test/ressources/concat/Fonction_Compte.parquet')
   fco = fco.add_suffix('_fonc_compte')
   fco = fco.rename(columns = {'Exer_fonc_compte' : 'Exer', 'Nomenclature_fonc_compte' : 'Nomenclature'})
   fco['Exer'] = fco['Exer'].astype(str)
 
-  fch = pd.read_parquet('./data_test/ressources/Fonction_Chapitre_2020.parquet')
+  fch = pd.read_parquet('./data_test/ressources/concat/Fonction_Chapitre.parquet')
   fch = fch.add_suffix('_fonc_chap')
   fch = fch.rename(columns = {'Exer_fonc_chap' : 'Exer', 'Nomenclature_fonc_chap' : 'Nomenclature'})
   fch['Exer'] = fch['Exer'].astype(str)
 
-  fref = pd.read_parquet('./data_test/ressources/Fonction_Referentiel_2020.parquet')
+  fref = pd.read_parquet('./data_test/ressources/concat/Fonction_Referentiel.parquet')
   fref = fref.add_suffix('_fonc_ref')
   fref = fref.rename(columns = {'Exer_fonc_ref' : 'Exer', 'Nomenclature_fonc_ref' : 'Nomenclature'})
   fref['Exer'] = fref['Exer'].astype(str)
 
-  nco = pd.read_parquet('./data_test/ressources/Nature_Compte_2020.parquet')
+  nco = pd.read_parquet('./data_test/ressources/concat/Nature_Compte.parquet')
   nco = nco.add_suffix('_nat_compte')
   nco = nco.rename(columns = {'Exer_nat_compte' : 'Exer', 'Nomenclature_nat_compte' : 'Nomenclature'})
   nco['Exer'] = nco['Exer'].astype(str)
 
-  nch = pd.read_parquet('./data_test/ressources/Nature_Chapitre_2020.parquet')
+  nch = pd.read_parquet('./data_test/ressources/concat/Nature_Chapitre.parquet')
   nch = nch.add_suffix('_nat_chap')
   nch = nch.rename(columns = {'Exer_nat_chap' : 'Exer', 'Nomenclature_nat_chap' : 'Nomenclature'})
   nch['Exer'] = nch['Exer'].astype(str)
@@ -1244,13 +1253,10 @@ def parquet_to_bdd() :
   dico_transco.to_sql('transcodage', engine, if_exists = 'replace', index = False, method = 'multi')
   info_siret.to_sql('info_siret',engine , if_exists = 'replace', index = False, method = 'multi')
 
-@dag(dag_id="setup_tables", start_date=datetime(2022, 4, 2))
+with DAG(dag_id="setup_tables", start_date=datetime(2022, 4, 2)) as dag : 
 
-def setup_tables():
-  task_1 = creation_tables()
-  task_2 = parquet_to_bdd()
+  creation_tables()
+  parquet_to_bdd()
 
-  task_1 >> task_2
 
-setup_tables()
  
